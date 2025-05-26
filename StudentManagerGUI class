@@ -1,0 +1,164 @@
+import javafx.application.Application;
+import javafx.geometry.Insets;
+import javafx.scene.Scene;
+import javafx.scene.control.*;
+import javafx.scene.layout.*;
+import javafx.stage.Stage;
+import javafx.scene.text.Font;
+
+public class StudentManagementGUI extends Application {
+    private StudentManager studentManager;
+    private CourseManager courseManager;
+    private GradeManager gradeManager;
+
+    @Override
+    public void start(Stage primaryStage) {
+        studentManager = new StudentManager();
+        courseManager = new CourseManager();
+        gradeManager = new GradeManager();
+
+        primaryStage.setTitle("Student Management System");
+
+        // Main layout
+        BorderPane root = new BorderPane();
+        root.setPadding(new Insets(10));
+
+        // Top Menu
+        MenuBar menuBar = new MenuBar();
+        Menu fileMenu = new Menu("File");
+        MenuItem exitItem = new MenuItem("Exit");
+        fileMenu.getItems().add(exitItem);
+        menuBar.getMenus().add(fileMenu);
+        root.setTop(menuBar);
+
+        // Center Layout
+        TabPane tabPane = new TabPane();
+        Tab studentTab = new Tab("Student Management");
+        Tab courseTab = new Tab("Course Enrollment");
+        Tab gradeTab = new Tab("Grade Management");
+
+        // Student Management Tab
+        VBox studentLayout = new VBox(10);
+        studentLayout.setPadding(new Insets(10));
+
+        Label studentLabel = new Label("Student Management");
+        studentLabel.setFont(new Font("Arial", 16));
+
+        Button addStudentButton = new Button("Add Student");
+        Button updateStudentButton = new Button("Update Student");
+        Button viewStudentButton = new Button("View Student Details");
+
+        ListView<String> studentListView = new ListView<>(studentManager.getStudentList());
+
+        addStudentButton.setOnAction(e -> showAddStudentForm());
+        updateStudentButton.setOnAction(e -> showUpdateStudentForm());
+        viewStudentButton.setOnAction(e -> studentListView.setItems(studentManager.getStudentList()));
+
+        studentLayout.getChildren().addAll(studentLabel, addStudentButton, updateStudentButton, viewStudentButton, studentListView);
+        studentTab.setContent(studentLayout);
+
+        // Course Enrollment Tab
+        VBox courseLayout = new VBox(10);
+        courseLayout.setPadding(new Insets(10));
+
+        Label courseLabel = new Label("Course Enrollment");
+        courseLabel.setFont(new Font("Arial", 16));
+
+        ComboBox<String> courseComboBox = new ComboBox<>(courseManager.getCourseList());
+        ListView<String> eligibleStudentsList = new ListView<>(studentManager.getStudentList());
+        Button enrollButton = new Button("Enroll Student");
+
+        courseComboBox.setOnAction(e -> eligibleStudentsList.setItems(studentManager.getStudentList()));
+        enrollButton.setOnAction(e -> {
+            String selectedCourse = courseComboBox.getValue();
+            String selectedStudent = eligibleStudentsList.getSelectionModel().getSelectedItem();
+            if (selectedStudent != null && selectedCourse != null) {
+                courseManager.enrollStudent(selectedStudent, selectedCourse);
+                showAlert("Enrollment Successful", selectedStudent + " enrolled in " + selectedCourse);
+            } else {
+                showAlert("Error", "Please select a student and a course.");
+            }
+        });
+
+        courseLayout.getChildren().addAll(courseLabel, courseComboBox, eligibleStudentsList, enrollButton);
+        courseTab.setContent(courseLayout);
+
+        // Grade Management Tab
+        VBox gradeLayout = new VBox(10);
+        gradeLayout.setPadding(new Insets(10));
+
+        Label gradeLabel = new Label("Grade Management");
+        gradeLabel.setFont(new Font("Arial", 16));
+
+        ComboBox<String> studentComboBox = new ComboBox<>(studentManager.getStudentList());
+        ListView<String> enrolledCoursesList = new ListView<>(courseManager.getEnrolledCourses());
+        TextField gradeField = new TextField();
+        Button assignGradeButton = new Button("Assign Grade");
+
+        studentComboBox.setOnAction(e -> {
+            String selectedStudent = studentComboBox.getValue();
+            enrolledCoursesList.setItems(courseManager.getEnrolledCourses().filtered(course -> course.contains(selectedStudent)));
+        });
+
+        assignGradeButton.setOnAction(e -> {
+            String selectedStudent = studentComboBox.getValue();
+            String selectedCourse = enrolledCoursesList.getSelectionModel().getSelectedItem();
+            String grade = gradeField.getText();
+            if (selectedStudent != null && selectedCourse != null && !grade.isEmpty()) {
+                gradeManager.assignGrade(selectedStudent, selectedCourse, grade);
+                showAlert("Grade Assigned", selectedStudent + " received grade " + grade + " in " + selectedCourse);
+            } else {
+                showAlert("Error", "Please select a student, course, and enter a grade.");
+            }
+        });
+
+        gradeLayout.getChildren().addAll(gradeLabel, studentComboBox, enrolledCoursesList, gradeField, assignGradeButton);
+        gradeTab.setContent(gradeLayout);
+
+        // Add tabs to the tab pane
+        tabPane.getTabs().addAll(studentTab, courseTab, gradeTab);
+        root.setCenter(tabPane);
+
+        // Set the scene and show the stage
+        Scene scene = new Scene(root, 600, 400);
+        primaryStage.setScene(scene);
+        primaryStage.show();
+    }
+
+    // Helper methods
+    private void showAddStudentForm() {
+        TextInputDialog dialog = new TextInputDialog();
+        dialog.setTitle("Add Student");
+        dialog.setHeaderText("Enter Student Name");
+        dialog.setContentText("Name:");
+        dialog.showAndWait().ifPresent(name -> {
+            studentManager.addStudent(name);
+            showAlert("Success", "Student added: " + name);
+        });
+    }
+
+    private void showUpdateStudentForm() {
+        ChoiceDialog<String> dialog = new ChoiceDialog<>(studentManager.getStudentList().get(0), studentManager.getStudentList());
+        dialog.setTitle("Update Student");
+        dialog.setHeaderText("Select a student to update");
+        dialog.setContentText("Student:");
+        dialog.showAndWait().ifPresent(student -> {
+            TextInputDialog updateDialog = new TextInputDialog(student);
+            updateDialog.setTitle("Update Student");
+            updateDialog.setHeaderText("Update Student Name");
+            updateDialog.setContentText("New Name:");
+            updateDialog.showAndWait().ifPresent(newName -> {
+                studentManager.updateStudent(student, newName);
+                showAlert("Success", "Student updated: " + newName);
+            });
+        });
+    }
+
+    private void showAlert(String title, String message) {
+        Alert alert = new Alert(Alert.AlertType.INFORMATION);
+        alert.setTitle(title);
+        alert.setHeaderText(null);
+        alert.setContentText(message);
+        alert.showAndWait();
+    }
+}
