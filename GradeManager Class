@@ -1,0 +1,6 @@
+public class GradeManager {
+    public void assignGrade(String student, String course, String grade) {
+        // Logic to assign a grade (can be expanded to store grades in a data structure)
+        System.out.println(student + " received grade " + grade + " in " + course);
+    }
+}
