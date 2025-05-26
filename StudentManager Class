@@ -1,0 +1,25 @@
+import javafx.collections.FXCollections;
+import javafx.collections.ObservableList;
+
+public class StudentManager {
+    private ObservableList<String> studentList;
+
+    public StudentManager() {
+        studentList = FXCollections.observableArrayList();
+    }
+
+    public ObservableList<String> getStudentList() {
+        return studentList;
+    }
+
+    public void addStudent(String name) {
+        studentList.add(name);
+    }
+
+    public void updateStudent(String oldName, String newName) {
+        int index = studentList.indexOf(oldName);
+        if (index != -1) {
+            studentList.set(index, newName);
+        }
+    }
+}
